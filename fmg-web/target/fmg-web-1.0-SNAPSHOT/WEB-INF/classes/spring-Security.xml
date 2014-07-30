@@ -1,0 +1,109 @@
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+           http://www.springframework.org/schema/security
+           http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+    <!--===方法级的保护=== secured-annotations 是基于注解的保护，可以接口或类，或方法上面使用@Secured注解来标识需要的角色
+    protect-pointcut 是对多个类，多个方法使用表达式来控制权限 注意这些只能对在Spring管理下的实例起作用.
+    <global-method-security secured-annotations="enabled">
+        <protect-pointcut expression="execution(* com.pinganfu.finmng.web.service.*Service.*(..))" access="ROLE_ADMIN"/>
+    </global-method-security>
+    -->
+    <!--===自定义提供AccessDecision===提供http和方法级别的自定义控制
+    <http access-decision-manager-ref="myDecision" />
+    <global-method-security access-decision-manager-ref="myDecision"/>
+    -->
+
+    <http auto-config='true' >
+        <intercept-url pattern="/**" access="ROLE_USER,ROLE_ADMIN" />
+        <!--===Remember-me功能===
+        Remember-me认证不能和基本认证一起使用，因为基本认证往往不使用HttpSession
+        第二种可以将cookie保存到服务器端的数据库中需要一张
+        table:persistent_logins
+        sql:create table persistent_logins (
+          username varchar(64) not null,
+          series varchar(64) primary key,
+          token varchar(64) not null,
+          last_used timestamp not null)
+        <remember-me key="rememberMe" user-service-ref="myUserDetailService"/>
+        <remember-me key="rememberMe" data-source-ref="mydataSource"/>
+        -->
+        <!-- 如果提供了表单登陆，需要去掉表单登陆的验证
+        <intercept-url pattern="/login.jsp*" access="IS_AUTHENTICATED_ANONYMOUSLY"/>
+        <form-login login-page="/login.jsp"/>
+        -->
+        <!--===登陆以后的默认页面==== 用户登陆前，没有访问受保护的页面，则默认的跳转页面default-target-url，如果配置了always-use-default-target
+         则每次登陆以后强制返回默认页面
+        <form-login  default-target-url="/index" always-use-default-target="true"></form-login>
+        -->
+        <!--===HTTPS 配置===  配置https的url，当用户使用http访问时，会被自动转为Https，post-mappings，则是http与https端口转换的映射
+        <intercept-url pattern="/**" access="ROLE_USER" requires-channel="https" />
+        <port-mappings>
+            <port-mapping http="8080" https="8443"/>
+        </port-mappings>
+        -->
+        <!--===Session失效和登出配置=== session 失效以后进入的URL,退出登录时，最好清空sessionID,sessionID,当后天创建session以后，返回给前天的响应，
+        会自动带上，Set-Cookie:JSESSIONID="7E73F5687DEE4319CA575AA1B7CADF18",delete-cookies，则会带上Set-Cookie:JSESSIONID=""
+        <session-management invalid-session-url="/sessionInvalid.jsp" />
+        <logout delete-cookies="JSESSIONID"/>
+        -->
+        <!--===用户重复登陆的次数限制=== 默认第二次登陆会使第一次失效，error-if-maximum-exceeded="true" 则使第二次登陆失效
+        需要在web.xml中添加下面的监听器，用来监听session的创建，从而判断是否用户重复登陆
+        <listener>
+            <listener-class>org.springframework.security.web.session.HttpSessionEventPublisher</listener-class>
+        </listener>
+        form表单的话，第二次登陆会被导向 authentication-failure-url(form-login元素中)，如果配置了remember-me,则会导致402或者session-authentication-error-url
+        session 固定攻击 session-fixation-protection，暂时测试有问题 ，登陆以后好像已经自动给予新的session id
+        sessionRegistry 可以从其中取到所有登陆过的session，从而做一些控制,比如expireNow()失效某些会话.
+        <session-management session-fixation-protection="migrateSession" session-authentication-error-url="/sessionInvalid.jsp">
+            <concurrency-control  max-sessions="1" error-if-maximum-exceeded="true" session-registry-alias="sessionRegistry" />
+        </session-management>
+        -->
+        <!--===用于自定义过滤器链===请注意避免位置冲突，不要禁用那些<http>自己使用而创建的过滤器，比如:
+        SecurityContextPersistenceFilter, ExceptionTranslationFilter 或 FilterSecurityInterceptor
+        Table 2.1. 标准过滤器假名和顺序
+        假名	过滤器累	命名空间元素或属性
+        CHANNEL_FILTER	ChannelProcessingFilter	http/intercept-url@requires-channel
+        CONCURRENT_SESSION_FILTER	ConcurrentSessionFilter	session-management/concurrency-control
+        SECURITY_CONTEXT_FILTER	SecurityContextPersistenceFilter	http
+        LOGOUT_FILTER	LogoutFilter	http/logout
+        X509_FILTER	X509AuthenticationFilter	http/x509
+        PRE_AUTH_FILTER	AstractPreAuthenticatedProcessingFilter Subclasses	N/A
+        CAS_FILTER	CasAuthenticationFilter	N/A
+        FORM_LOGIN_FILTER	UsernamePasswordAuthenticationFilter	http/form-login
+        BASIC_AUTH_FILTER	BasicAuthenticationFilter	http/http-basic
+        SERVLET_API_SUPPORT_FILTER	SecurityContextHolderAwareFilter	http/@servlet-api-provision
+        JAAS_API_SUPPORT_FILTER	JaasApiIntegrationFilter	http/@jaas-api-provision
+        REMEMBER_ME_FILTER	RememberMeAuthenticationFilter	http/remember-me
+        ANONYMOUS_FILTER	SessionManagementFilter	http/anonymous
+        SESSION_MANAGEMENT_FILTER	AnonymousAuthenticationFilter	session-management
+        EXCEPTION_TRANSLATION_FILTER	ExceptionTranslationFilter	http
+        FILTER_SECURITY_INTERCEPTOR	FilterSecurityInterceptor	http
+        SWITCH_USER_FILTER	SwitchUserAuthenticationFilter	N/A
+        <custom-filter ref="myFilter" position="ANONYMOUS_FILTER"/>
+        -->
+    </http>
+    <authentication-manager>
+        <authentication-provider user-service-ref="myUserDetailService">
+           <!-- <user-service>
+                <user name="gao" authorities="ROLE_USER" password="123"/>
+                <user name="admin" authorities="ROLE_ADMIN" password="123"/>
+            </user-service>-->
+        </authentication-provider>
+    </authentication-manager>
+    <beans:bean id="accessDecisionManager" class="org.springframework.security.access.vote.AffirmativeBased">
+       <beans:constructor-arg name="decisionVoters">
+           <beans:list>
+               <beans:bean class="com.pinganfu.finmng.web.authority.voters.GroupVoter"/>
+               <beans:bean class="com.pinganfu.finmng.web.authority.voters.RoleVoter"/>
+               <beans:bean class="com.pinganfu.finmng.web.authority.voters.UserVoter"/>
+               <beans:bean class="com.pinganfu.finmng.web.authority.voters.AuthVoter"/>
+               <beans:bean class="org.springframework.security.access.vote.AuthenticatedVoter"/>
+           </beans:list>
+       </beans:constructor-arg>
+    </beans:bean>
+    <beans:bean id="myUserDetailService" class="com.pinganfu.finmng.web.service.UserDetailService" />
+
+</beans:beans>

@@ -1,0 +1,132 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd
+        http://www.springframework.org/schema/util 
+        http://www.springframework.org/schema/util/spring-util.xsd
+        http://www.springframework.org/schema/security
+		http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+    <context:component-scan base-package="com.pinganfu.finmng.web.controller"/>
+    <mvc:annotation-driven>
+        <!-- download file -->
+        <mvc:message-converters>
+            <bean id="downloadString" class="org.springframework.http.converter.ByteArrayHttpMessageConverter"/>
+            <bean id="uploadFile" class="com.pinganfu.finmng.web.support.DownloadHttpMessageConverter"/>
+            <bean id="json" class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter"/>
+        </mvc:message-converters>
+
+    </mvc:annotation-driven>
+    <context:annotation-config/>
+    <mvc:resources mapping="/webresource/**" location="/webresource/"/>
+
+    <bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <property name="basename" value="classpath:messages"/>
+        <property name="defaultEncoding" value="UTF-8"/>
+    </bean>
+    <bean id="localeResolver" class="org.springframework.web.servlet.i18n.CookieLocaleResolver">
+        <property name="cookieName" value="clientLanguage"/>
+        <property name="cookieMaxAge" value="100000"/>
+        <property name="cookiePath" value="/"/>
+        <property name="defaultLocale" value="en"/>
+    </bean>
+    <mvc:interceptors>
+        <bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
+            <property name="paramName" value="locale"/>
+        </bean>
+        <bean id="webContentInterceptor" class="org.springframework.web.servlet.mvc.WebContentInterceptor">
+            <property name="cacheSeconds" value="0"/>
+            <property name="useExpiresHeader" value="true"/>
+            <property name="useCacheControlHeader" value="true"/>
+            <property name="useCacheControlNoStore" value="true"/>
+        </bean>
+    </mvc:interceptors>
+
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/pages/"/>
+        <property name="suffix" value=".jsp"/>
+        <property name="order" value="1"/>
+    </bean>
+
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+        <property name="cache" value="true" />
+        <property name="prefix" value="" />
+        <property name="suffix" value=".ftl" />
+        <property name="contentType" value="text/html;charset=UTF-8" />
+        <property name="requestContextAttribute" value="request" />
+        <property name="exposeSpringMacroHelpers" value="true" />
+        <property name="exposeRequestAttributes" value="true" />
+        <property name="exposeSessionAttributes" value="true" />
+        <property name="order" value="0" />
+    </bean>
+    <bean id="freemarkerConfig"
+          class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+        <property name="templateLoaderPath" value="/WEB-INF/pages/" />
+        <property name="freemarkerSettings">
+            <props>
+                <prop key="template_update_delay">3600</prop>
+                <prop key="default_encoding">UTF-8</prop>
+                <prop key="number_format">0.##########</prop>
+                <prop key="datetime_format">yyyy-MM-dd HH:mm:ss</prop>
+                <!-- 可以满足一般需要。默认情况变量为null则替换为空字符串，如果需要自定义，写上${empty!"EmptyValue of fbysss"}的形式即可  -->
+                <prop key="classic_compatible">true</prop>
+                <prop key="template_exception_handler">ignore</prop>
+            </props>
+        </property>
+    </bean>
+
+    <!-- <bean id="handleException" class="com.acxiom.ccco.ui.exception.UIHandlerExceptionResolver" />
+
+     &lt;!&ndash; for SSO, SSO beans must be initialized before initConfiguration bean in applicationContext-base-common.xml,
+          which is included in applicationContext-core-common.xml &ndash;&gt;
+     <security:http pattern="/ping" security="none"/>
+     <security:http auto-config="false" use-expressions="true" entry-point-ref="loginUrlAuthenticationEntryPoint"
+                    disable-url-rewriting="true" >
+         <security:custom-filter ref="AcxiomWebProcessingFilter" position="FORM_LOGIN_FILTER" />
+         <security:session-management session-fixation-protection="migrateSession" />
+         <security:intercept-url pattern="/WEB-INF/tags" access="hasRole('ROLE_USER')" />
+     </security:http>
+     <bean id="restTemplate" class="org.springframework.web.client.RestTemplate">
+         <property name="messageConverters">
+             <list>
+                 <bean class="org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter" />
+                 <bean class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter"/>
+                 <bean class="org.springframework.http.converter.StringHttpMessageConverter" />
+             </list>
+         </property>
+     </bean>
+     <bean id="globalHeaderServiceConnector" class="com.acxiom.ccco.web.connector.GlobalHeaderServiceConnector">
+         <property name="globalHeaderServiceUrl" value="${acxiomweb.serviceURL.globalNavigation}" />
+         <property name="appName" value="${acxiomweb.applicationName}" />
+         <property name="campaignplansMenuId" value="${campaignplans.menuId}" />
+         <property name="scenariosMenuId" value="${scenarios.menuId}" />
+         <property name="datasetsMenuId" value="${datasets.menuId}" />
+         <property name="configurationMenuId" value="${configuration.menuId}" />
+         <property name="apiKey" value="${acxiomweb.api.key}" />
+         <property name="apiSecret" value="${acxiomweb.api.secret}" />
+     </bean>
+     <bean id="scenarioController" class="com.acxiom.ccco.ui.controller.ScenarioController" >
+         <property name="displayOpen" value="${displayOpen}" />
+     </bean>
+
+     &lt;!&ndash; uplaod File &ndash;&gt;
+     <bean  id="multipartResolver" class="com.acxiom.ccco.ui.upload.PgCommonsMultipartResolver">
+         <property name="defaultEncoding" value="UTF-8" />
+         &lt;!&ndash;<property name="maxUploadSize" value="5242880" />&ndash;&gt;
+         &lt;!&ndash;<property name="uploadTempDir" value="/home/agao" />&ndash;&gt;
+     </bean>-->
+</beans>

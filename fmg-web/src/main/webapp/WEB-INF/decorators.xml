@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<decorators defaultdir="/WEB-INF/pages/decorators/">
+    <!-- Excludes will never be decorated by Sitemesh.
+    <excludes>
+        <pattern>*/exclude/*</pattern>
+        <pattern>/data/plaintext/*</pattern>
+        <pattern>*.txt</pattern>
+    </excludes>
+     -->
+    <decorator name="basic-theme" page="basic-theme.jsp">
+        <pattern>/sitemesh/*</pattern>
+    </decorator>
+</decorators>
